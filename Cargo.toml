@@ -1,0 +1,10 @@
+[package]
+name = "rotomos-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+x86 = "0.51.0"
+limine = "0.1.8"
