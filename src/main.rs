@@ -20,7 +20,7 @@ fn panic(_info: &PanicInfo) -> ! {
 // define the kernel's entry point function
 #[no_mangle]
 extern "C" fn x86_64_barebones_main() -> ! {
-    println!("Hello, rusty world!\n");
+    println!("Rotom rotom!\n");
 
     let bootloader_info = BOOTLOADER_INFO
         .get_response()
@@ -39,9 +39,9 @@ extern "C" fn x86_64_barebones_main() -> ! {
         .expect("barebones: recieved no mmap")
         .mmap();
 
-    println!("mmap: {:#x?}", mmap);
+    //println!("mmap: {:#x?}", mmap);
 
-    let free_pages = build_freelist(mmap);
+    build_freelist(mmap);
 
     loop {}
 }
