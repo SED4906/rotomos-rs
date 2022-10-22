@@ -3,6 +3,7 @@
 
 mod writer;
 mod memory;
+mod task;
 
 use core::panic::PanicInfo;
 use limine::*;
