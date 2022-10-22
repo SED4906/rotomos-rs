@@ -1,9 +1,10 @@
 #![no_std]
 #![no_main]
+#![feature(strict_provenance)]
+#![feature(error_in_core)]
 
-mod writer;
-mod memory;
-mod task;
+pub mod writer;
+pub mod memory;
 
 use core::panic::PanicInfo;
 use limine::*;
@@ -15,6 +16,11 @@ static MMAP: LimineMmapRequest = LimineMmapRequest::new(0);
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    if let Some(s) = _info.payload().downcast_ref::<&str>() {
+        println!("panic: {s:?}");
+    } else {
+        println!("panic: ??");
+    }
     loop {}
 }
 
@@ -43,6 +49,8 @@ extern "C" fn x86_64_barebones_main() -> ! {
     //println!("mmap: {:#x?}", mmap);
 
     build_freelist(mmap);
+
+    
 
     loop {}
 }
