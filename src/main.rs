@@ -9,6 +9,7 @@ pub mod memory;
 use core::panic::PanicInfo;
 use limine::*;
 use crate::memory::build_freelist;
+use crate::memory::get_current_pagemap;
 
 static TERMINAL_REQUEST: LimineTerminalRequest = LimineTerminalRequest::new(0);
 static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
@@ -49,8 +50,6 @@ extern "C" fn x86_64_barebones_main() -> ! {
     //println!("mmap: {:#x?}", mmap);
 
     build_freelist(mmap);
-
-    
 
     loop {}
 }
