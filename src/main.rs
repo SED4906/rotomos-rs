@@ -5,11 +5,11 @@
 
 pub mod writer;
 pub mod memory;
+pub mod task;
 
 use core::panic::PanicInfo;
 use limine::*;
 use crate::memory::build_freelist;
-use crate::memory::get_current_pagemap;
 
 static TERMINAL_REQUEST: LimineTerminalRequest = LimineTerminalRequest::new(0);
 static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
@@ -33,7 +33,7 @@ extern "C" fn x86_64_barebones_main() -> ! {
     let bootloader_info = BOOTLOADER_INFO
         .get_response()
         .get()
-        .expect("barebones: recieved no bootloader info");
+        .expect("rotom: recieved no bootloader info");
 
     println!(
         "bootloader: (name={:?}, version={:?})",
@@ -44,7 +44,7 @@ extern "C" fn x86_64_barebones_main() -> ! {
     let mmap = MMAP
         .get_response()
         .get()
-        .expect("barebones: recieved no mmap")
+        .expect("rotom: recieved no mmap")
         .mmap();
 
     //println!("mmap: {:#x?}", mmap);

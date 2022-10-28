@@ -38,7 +38,6 @@ pub struct Freelist {
 pub struct Pagemap {
     level: u8,
     data: *mut usize,
-    flags: usize
 }
 
 static mut FREE_PAGES: Option<NonNull<Freelist>> = None;
@@ -62,7 +61,7 @@ pub fn build_freelist(mmap: Option<&[LimineMemmapEntry]>) {
         HHDM_VAL = Some(HHDM
             .get_response()
             .get()
-            .expect("barebones: received no hhdm")
+            .expect("rotom: received no hhdm")
             .offset);
     }
     for ment in mmap.unwrap() {
@@ -95,21 +94,21 @@ pub fn deallocate_page(address: NonNull<u8>) {
 }
 
 impl Pagemap {
-    fn new(level: u8, flags: usize) -> Result<Pagemap, MemoryError> {
+    fn new(level: u8) -> Result<Pagemap, MemoryError> {
         let res = allocate_page();
         match res {
-            Ok(page) => Ok(Pagemap{level, data:page.as_ptr() as *mut usize, flags}),
+            Ok(page) => Ok(Pagemap{level, data:page.as_ptr() as *mut usize}),
             Err(err) => Err(err)
         }
     }
     fn new_mapping(&self, entry: usize, flags: usize) -> Result<Pagemap, MemoryError> {
         if let Ok(mapping) = self.get_mapping(entry) {
-            return Ok(mapping);
+            return Ok(mapping.0);
         }
-        let page = Pagemap::new(self.level - 1, flags)?;
+        let page = Pagemap::new(self.level - 1)?;
         self.set_mapping(entry, page.data as usize, flags)
     }
-    fn get_mapping(&self, entry: usize) -> Result<Pagemap, MemoryError> {
+    fn get_mapping(&self, entry: usize) -> Result<(Pagemap, usize), MemoryError> {
         if self.level == 0 {
             return Err(MemoryError::MapTooDeep);
         }
@@ -120,7 +119,7 @@ impl Pagemap {
                 return Err(MemoryError::NotPresent);
             }
             entdata &= 0xFFFFFFFFFFFFF000;
-            return Ok(Pagemap{level:self.level-1,data:entdata as *mut usize, flags});
+            return Ok((Pagemap{level:self.level-1,data:entdata as *mut usize}, flags));
         }
     }
     fn set_mapping(&self, entry: usize, mapping: usize, flags: usize) -> Result<Pagemap,MemoryError> {
@@ -130,7 +129,7 @@ impl Pagemap {
         unsafe {
             let entptr = (self.data as usize + entry*8) as *mut usize;
             *entptr = mapping | flags;
-            return Ok(Pagemap { level: self.level-1, data: mapping as *mut usize, flags: flags});
+            return Ok(Pagemap { level: self.level-1, data: mapping as *mut usize});
         }
     }
     pub fn set_vpage(&self, paddr: usize, vaddr: usize, flags: usize) -> Result<Pagemap,MemoryError> {
@@ -146,7 +145,7 @@ impl Pagemap {
         let level1 = level2.new_mapping(entry2, flags)?;
         level1.set_mapping(entry1, paddr, flags)
     }
-    pub fn get_vpage(&self, vaddr: usize) -> Result<Pagemap,MemoryError> {
+    pub fn get_vpage(&self, vaddr: usize) -> Result<(Pagemap, usize),MemoryError> {
         if self.level != 4 {
             return Err(MemoryError::InvalidMap);
         }
@@ -154,15 +153,15 @@ impl Pagemap {
         let entry3 = (vaddr & 0x0000007FC0000000) >> 30;
         let entry2 = (vaddr & 0x000000003FE00000) >> 21;
         let entry1 = (vaddr & 0x00000000001FF000) >> 12;
-        let level3 = self.get_mapping(entry4)?;
-        let level2 = level3.get_mapping(entry3)?;
-        let level1 = level2.get_mapping(entry2)?;
+        let level3 = self.get_mapping(entry4)?.0;
+        let level2 = level3.get_mapping(entry3)?.0;
+        let level1 = level2.get_mapping(entry2)?.0;
         level1.get_mapping(entry1)
     }
 }
 
 pub fn get_current_pagemap() -> Pagemap {
     unsafe {
-        Pagemap {level:4,data:x86::controlregs::cr3() as *mut usize,flags:7}
+        Pagemap {level:4,data:x86::controlregs::cr3() as *mut usize}
     }
 }
